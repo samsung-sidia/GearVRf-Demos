@@ -15,21 +15,14 @@
 
 package org.gearvrf.arcore.simplesample;
 
-import android.graphics.Color;
 import android.util.Log;
 
-import org.gearvrf.GVRAndroidResource;
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVREventListeners;
 import org.gearvrf.GVRMain;
-import org.gearvrf.GVRMaterial;
-import org.gearvrf.GVRMesh;
 import org.gearvrf.GVRPicker;
-import org.gearvrf.GVRRenderData;
 import org.gearvrf.GVRScene;
 import org.gearvrf.GVRSceneObject;
-import org.gearvrf.io.GVRCursorController;
-import org.gearvrf.io.GVRInputManager;
 import org.gearvrf.mixedreality.GVRAnchor;
 import org.gearvrf.mixedreality.GVRHitResult;
 import org.gearvrf.mixedreality.GVRMixedReality;
@@ -39,63 +32,82 @@ import org.gearvrf.mixedreality.IAnchorEventsListener;
 import org.gearvrf.mixedreality.IPlaneEventsListener;
 import org.joml.Vector3f;
 
-import java.util.EnumSet;
+import java.util.ArrayList;
+import java.util.List;
 
-public class SampleMain extends GVRMain implements IPlaneEventsListener, IAnchorEventsListener {
+
+public class SampleMain extends GVRMain {
     private static String TAG = "GVR_ARCORE";
-    GVRMixedReality mixedReality;
-    GVRContext mGVRContext;
-    GVRScene mainScene;
-    private GVRSceneObject mCursor;
-    private GVRCursorController mCursorController;
+    private static int MAX_VIRTUAL_OBJECTS = 20;
+
+    private GVRContext mGVRContext;
+    private GVRScene mainScene;
+
+    private GVRMixedReality mixedReality;
+    private SampleHelper helper;
     private TouchHandler mTouchHandler;
+
+
+
+    private List<GVRAnchor> mVirtualObjects;
+    private int mVirtObjCount = 0;
+
 
     @Override
     public void onInit(GVRContext gvrContext) {
         mGVRContext = gvrContext;
         mainScene = mGVRContext.getMainScene();
+        helper = new SampleHelper();
         mTouchHandler = new TouchHandler();
-        initCursorController(gvrContext);
+        mVirtualObjects = new ArrayList<>() ;
+        mVirtObjCount = 0;
+
+        helper.initCursorController(gvrContext, mTouchHandler);
 
 
         mixedReality = new GVRMixedReality(gvrContext, mainScene);
-        mixedReality.registerPlaneListener(this);
-        mixedReality.registerAnchorListener(this);
+        mixedReality.registerPlaneListener(planeEventsListener);
+        mixedReality.registerAnchorListener(anchorEventsListener);
 
     }
 
-    @Override
-    public void onPlaneDetection(GVRPlane gvrPlane) {
-        gvrPlane.setSceneObject(createQuadPlane(getGVRContext()));
-        mainScene.addSceneObject(gvrPlane);
-    }
 
-    @Override
-    public void onPlaneStateChange(GVRPlane gvrPlane, GVRTrackingState gvrTrackingState) {
-        if (gvrTrackingState != GVRTrackingState.TRACKING) {
-            gvrPlane.setEnable(false);
+    private IPlaneEventsListener planeEventsListener = new IPlaneEventsListener() {
+        @Override
+        public void onPlaneDetection(GVRPlane gvrPlane) {
+            gvrPlane.setSceneObject(helper.createQuadPlane(getGVRContext()));
+            mainScene.addSceneObject(gvrPlane);
         }
-        else {
-            gvrPlane.setEnable(true);
+
+        @Override
+        public void onPlaneStateChange(GVRPlane gvrPlane, GVRTrackingState gvrTrackingState) {
+            if (gvrTrackingState != GVRTrackingState.TRACKING) {
+                gvrPlane.setEnable(false);
+            }
+            else {
+                gvrPlane.setEnable(true);
+            }
         }
-    }
 
-    @Override
-    public void onPlaneMerging(GVRPlane childPlane, GVRPlane parentPlane) {
-    }
-
-    @Override
-    public void onAnchorStateChange(GVRAnchor gvrAnchor, GVRTrackingState gvrTrackingState) {
-        if (gvrTrackingState != GVRTrackingState.TRACKING) {
-            gvrAnchor.setEnable(false);
+        @Override
+        public void onPlaneMerging(GVRPlane gvrPlane, GVRPlane gvrPlane1) {
         }
-        else {
-            gvrAnchor.setEnable(true);
+    };
+
+    private IAnchorEventsListener anchorEventsListener = new IAnchorEventsListener() {
+        @Override
+        public void onAnchorStateChange(GVRAnchor gvrAnchor, GVRTrackingState gvrTrackingState) {
+            if (gvrTrackingState != GVRTrackingState.TRACKING) {
+                gvrAnchor.setEnable(false);
+            }
+            else {
+                gvrAnchor.setEnable(true);
+            }
         }
-    }
+    };
 
 
-    private class TouchHandler extends GVREventListeners.TouchEvents {
+    public class TouchHandler extends GVREventListeners.TouchEvents {
         private GVRSceneObject mDraggingObject = null;
 
 
@@ -184,7 +196,7 @@ public class SampleMain extends GVRMain implements IPlaneEventsListener, IAnchor
             Vector3f origin = new Vector3f();
             Vector3f direction = new Vector3f();
 
-            mCursorController.getPicker().getWorldPickRay(origin, direction);
+            helper.getCursorController().getPicker().getWorldPickRay(origin, direction);
 
             return GVRPicker.pickSceneObject(sceneObject, origin.x, origin.y, origin.z,
                     direction.x, direction.y, direction.z);
@@ -198,66 +210,27 @@ public class SampleMain extends GVRMain implements IPlaneEventsListener, IAnchor
                 return;
             }
 
-            GVRAnchor anchor = mixedReality.createAnchor(gvrHitResult.getPose(), andy);
-            mainScene.addSceneObject(anchor);
+            addVirtualObject(gvrHitResult.getPose(), andy);
         }
     }
 
+    private void addVirtualObject(float[] pose, VirtualObject andy) {
+        GVRAnchor anchor;
 
-    private void initCursorController(GVRContext gvrContext) {
-        mainScene.getEventReceiver().addListener(mTouchHandler);
-        GVRInputManager inputManager = gvrContext.getInputManager();
-        mCursor = new GVRSceneObject(gvrContext,
-                gvrContext.createQuad(0.2f * 100,
-                        0.2f * 100),
-                gvrContext.getAssetLoader().loadTexture(new GVRAndroidResource(gvrContext,
-                        R.raw.cursor)));
-        mCursor.getRenderData().setDepthTest(false);
-        mCursor.getRenderData().setRenderingOrder(GVRRenderData.GVRRenderingOrder.OVERLAY);
-        final EnumSet<GVRPicker.EventOptions> eventOptions = EnumSet.of(
-                GVRPicker.EventOptions.SEND_TOUCH_EVENTS,
-                GVRPicker.EventOptions.SEND_TO_LISTENERS);
-        inputManager.selectController(new GVRInputManager.ICursorControllerSelectListener()
-        {
-            public void onCursorControllerSelected(GVRCursorController newController, GVRCursorController oldController)
-            {
-                if (oldController != null)
-                {
-                    oldController.removePickEventListener(mTouchHandler);
-                }
-                mCursorController = newController;
-                newController.addPickEventListener(mTouchHandler);
-                newController.setCursor(mCursor);
-                newController.setCursorDepth(-100f);
-                newController.setCursorControl(GVRCursorController.CursorControl.CURSOR_CONSTANT_DEPTH);
-                newController.getPicker().setEventOptions(eventOptions);
-            }
-        });
-    }
+        if (mVirtObjCount < MAX_VIRTUAL_OBJECTS) {
+             anchor = mixedReality.createAnchor(pose, andy);
 
+            mainScene.addSceneObject(anchor);
+            mVirtualObjects.add(anchor);
+        }
+        else {
+            anchor = mVirtualObjects.get(mVirtObjCount % mVirtualObjects.size());
+            mixedReality.updateAnchorPose(anchor, pose);
+        }
 
-    private int hsvHUE = 0;
-    private GVRSceneObject createQuadPlane(GVRContext gvrContext) {
-        GVRMesh mesh = GVRMesh.createQuad(gvrContext,
-                "float3 a_position", 1.0f, 1.0f);
+        anchor.setName("id: " + mVirtObjCount);
+        Log.d(TAG, "New virtual object " + anchor.getName());
 
-        GVRMaterial mat = new GVRMaterial(gvrContext, GVRMaterial.GVRShaderType.Phong.ID);
-
-        GVRSceneObject polygonObject = new GVRSceneObject(gvrContext, mesh, mat);
-
-        hsvHUE += 35;
-        float[] hsv = new float[3];
-        hsv[0] = hsvHUE % 360;
-        hsv[1] = 1f; hsv[2] = 1f;
-
-        int c =  Color.HSVToColor(50, hsv);
-        mat.setDiffuseColor(Color.red(c) / 255f,Color.green(c) / 255f,
-                Color.blue(c) / 255f, 0.2f);
-
-        polygonObject.getRenderData().setMaterial(mat);
-        polygonObject.getRenderData().setAlphaBlend(true);
-        polygonObject.getTransform().setRotationByAxis(-90, 1, 0, 0);
-
-        return polygonObject;
+        mVirtObjCount++;
     }
 }
