@@ -23,7 +23,7 @@ import org.gearvrf.GVRSceneObject;
 
 import java.io.IOException;
 
-public class VirtualObject extends GVRSceneObject {
+class VirtualObject extends GVRSceneObject {
     private static final float[] UNPICKED_COLOR = {0.7f, 0.7f, 0.7f, 1.0f};
     private static final float[] PICKED_COLOR = {1.0f, 0.0f, 0.0f, 1.0f};
     private static final float[] CLICKED_COLOR = {0.5f, 0.5f, 1.0f, 1.0f};
@@ -31,7 +31,7 @@ public class VirtualObject extends GVRSceneObject {
 
     private GVRSceneObject m3dModel;
 
-    public VirtualObject(GVRContext gvrContext) {
+    VirtualObject(GVRContext gvrContext) {
         super(gvrContext);
 
         try {
@@ -66,35 +66,35 @@ public class VirtualObject extends GVRSceneObject {
     }
 
 
-    public void reactToLightEnvironment(float lightEstimate) {
+    void reactToLightEnvironment(float lightEstimate) {
         m3dModel.getRenderData().getMaterial().setDiffuseColor(
                 current_color[0] * lightEstimate, current_color[1] * lightEstimate,
                 current_color[2] * lightEstimate, current_color[3]);
     }
 
 
-    public void onPickEnter() {
+    void onPickEnter() {
         if (m3dModel == null)
             return;
 
         current_color = PICKED_COLOR;
     }
 
-    public void onPickExit() {
+    void onPickExit() {
         if (m3dModel == null)
             return;
 
         current_color = UNPICKED_COLOR;
     }
 
-    public void onTouchStart() {
+    void onTouchStart() {
         if (m3dModel == null)
             return;
 
         current_color = CLICKED_COLOR;
     }
 
-    public void onTouchEnd() {
+    void onTouchEnd() {
         if (m3dModel == null)
             return;
 

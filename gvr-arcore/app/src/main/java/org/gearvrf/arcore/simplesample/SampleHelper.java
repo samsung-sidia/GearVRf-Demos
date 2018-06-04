@@ -61,18 +61,17 @@ public class SampleHelper {
     }
 
     public void initCursorController(GVRContext gvrContext, final SampleMain.TouchHandler handler) {
+        final int cursorDepth = 100;
         gvrContext.getMainScene().getEventReceiver().addListener(handler);
         GVRInputManager inputManager = gvrContext.getInputManager();
         mCursor = new GVRSceneObject(gvrContext,
-                gvrContext.createQuad(0.2f * 100,
-                        0.2f * 100),
+                gvrContext.createQuad(0.2f * cursorDepth,
+                        0.2f * cursorDepth),
                 gvrContext.getAssetLoader().loadTexture(new GVRAndroidResource(gvrContext,
                         R.raw.cursor)));
         mCursor.getRenderData().setDepthTest(false);
         mCursor.getRenderData().setRenderingOrder(GVRRenderData.GVRRenderingOrder.OVERLAY);
-        final EnumSet<GVRPicker.EventOptions> eventOptions = EnumSet.of(
-                GVRPicker.EventOptions.SEND_TOUCH_EVENTS,
-                GVRPicker.EventOptions.SEND_TO_LISTENERS);
+
         inputManager.selectController(new GVRInputManager.ICursorControllerSelectListener()
         {
             public void onCursorControllerSelected(GVRCursorController newController, GVRCursorController oldController)
@@ -84,9 +83,8 @@ public class SampleHelper {
                 mCursorController = newController;
                 newController.addPickEventListener(handler);
                 newController.setCursor(mCursor);
-                newController.setCursorDepth(-100f);
+                newController.setCursorDepth(-cursorDepth);
                 newController.setCursorControl(GVRCursorController.CursorControl.CURSOR_CONSTANT_DEPTH);
-                newController.getPicker().setEventOptions(eventOptions);
             }
         });
     }

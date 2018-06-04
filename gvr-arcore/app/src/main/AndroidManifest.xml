@@ -22,6 +22,9 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
 
     <!-- This tag indicates that this application requires ARCore.  This results in the application
         only being visible in the Google Play Store on devices that support ARCore. -->
@@ -46,6 +49,9 @@
         <!-- This tag indicates that this application requires ARCore.  This results in the Google Play
             Store downloading and installing ARCore along with the application. -->
         <meta-data android:name="com.google.ar.core" android:value="required" />
+        <meta-data
+            android:name="com.google.android.ar.API_KEY"
+            android:value=""/>
     </application>
 
 </manifest>

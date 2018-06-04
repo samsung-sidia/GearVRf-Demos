@@ -22,14 +22,14 @@ import org.gearvrf.utility.Log;
 
 public class SampleActivity extends GVRActivity {
     private static final String TAG = "GVR_ARCORE";
-    private SampleMain mMain;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         Log.d(TAG, "onCreate");
-        mMain = new SampleMain();
+
+        SampleMain mMain = new SampleMain();
         setMain(mMain, "gvr.xml");
     }
 }
