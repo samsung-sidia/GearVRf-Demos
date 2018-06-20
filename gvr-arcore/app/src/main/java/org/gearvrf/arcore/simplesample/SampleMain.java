@@ -15,6 +15,8 @@
 
 package org.gearvrf.arcore.simplesample;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.util.Log;
 
 import org.gearvrf.GVRContext;
@@ -24,14 +26,18 @@ import org.gearvrf.GVRPicker;
 import org.gearvrf.GVRScene;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.mixedreality.GVRAnchor;
+import org.gearvrf.mixedreality.GVRAugmentedImage;
 import org.gearvrf.mixedreality.GVRHitResult;
 import org.gearvrf.mixedreality.GVRMixedReality;
 import org.gearvrf.mixedreality.GVRPlane;
 import org.gearvrf.mixedreality.GVRTrackingState;
 import org.gearvrf.mixedreality.IAnchorEventsListener;
+import org.gearvrf.mixedreality.IAugmentedImageEventsListener;
 import org.gearvrf.mixedreality.IPlaneEventsListener;
 import org.joml.Vector3f;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,6 +54,8 @@ public class SampleMain extends GVRMain {
     private TouchHandler mTouchHandler;
 
 
+    private ArrayList<GVRAugmentedImage> mAugmentedImages;
+    private GVRAnchor mImageAnchor;
 
     private List<GVRAnchor> mVirtualObjects;
     private int mVirtObjCount = 0;
@@ -61,6 +69,8 @@ public class SampleMain extends GVRMain {
         mTouchHandler = new TouchHandler();
         mVirtualObjects = new ArrayList<>() ;
         mVirtObjCount = 0;
+        mAugmentedImages = new ArrayList<>();
+        ArrayList<Bitmap> bitmapList = new ArrayList<>();
 
         helper.initCursorController(gvrContext, mTouchHandler);
 
@@ -68,20 +78,52 @@ public class SampleMain extends GVRMain {
         mixedReality = new GVRMixedReality(gvrContext, mainScene);
         mixedReality.registerPlaneListener(planeEventsListener);
         mixedReality.registerAnchorListener(anchorEventsListener);
+        mixedReality.registerAugmentedImageListener(augmentedImageEventsListener);
         mixedReality.resume();
+        bitmapList.add(loadAugmentedImage());
+        mixedReality.setAugmentedImages(bitmapList);
 
     }
 
     @Override
     public void onStep() {
         super.onStep();
-        for (GVRAnchor anchor: mVirtualObjects) {
-            for (GVRSceneObject obj: anchor.getChildren()) {
-                ((VirtualObject)obj).reactToLightEnvironment(
+        for (GVRAnchor anchor : mVirtualObjects) {
+            for (GVRSceneObject obj : anchor.getChildren()) {
+                ((VirtualObject) obj).reactToLightEnvironment(
                         mixedReality.getLightEstimate().getPixelIntensity());
             }
         }
+
+        for (GVRAugmentedImage image : mAugmentedImages) {
+            mixedReality.updateAnchorPose(mImageAnchor, image.getCenterPose());
+        }
     }
+
+    public Bitmap loadAugmentedImage() {
+        try (InputStream is = mGVRContext.getActivity().getAssets().open("image001-1.png")) {
+            return BitmapFactory.decodeStream(is);
+        } catch (IOException e) {
+            Log.e(TAG, "IO exception loading augmented image bitmap.", e);
+        }
+        return null;
+    }
+
+    private IAugmentedImageEventsListener augmentedImageEventsListener = new IAugmentedImageEventsListener() {
+        @Override
+        public void onAugmentedImageDetection(GVRAugmentedImage gvrAugmentedImage) {
+            mAugmentedImages.add(gvrAugmentedImage);
+            VirtualObject andy = new VirtualObject(mGVRContext, "objects/Fox_Pokemon.obj");
+            mImageAnchor = mixedReality.createAnchor(gvrAugmentedImage.getCenterPose(), andy);
+            mainScene.addSceneObject(mImageAnchor);
+            Log.d(TAG, "detected");
+        }
+
+        @Override
+        public void onAugmentedImageStateChange(GVRAugmentedImage gvrAugmentedImage, GVRTrackingState gvrTrackingState) {
+
+        }
+    };
 
     private IPlaneEventsListener planeEventsListener = new IPlaneEventsListener() {
         @Override
@@ -133,6 +175,7 @@ public class SampleMain extends GVRMain {
                 return;
             }
 
+            Log.d(TAG, "onEnter");
             ((VirtualObject)sceneObj).onPickEnter();
         }
 
@@ -149,6 +192,7 @@ public class SampleMain extends GVRMain {
             }
 
             if (mDraggingObject == null) {
+                Log.d(TAG, "onExit");
                 ((VirtualObject) sceneObj).onPickExit();
             }
         }
@@ -248,12 +292,12 @@ public class SampleMain extends GVRMain {
 
         private void onSingleTap(GVRSceneObject sceneObj, GVRPicker.GVRPickedObject collision) {
             GVRHitResult gvrHitResult = mixedReality.hitTest(sceneObj, collision);
-            VirtualObject andy = new VirtualObject(mGVRContext);
 
             if (gvrHitResult == null) {
                 return;
             }
 
+            VirtualObject andy = new VirtualObject(mGVRContext, "objects/andy.obj");
             addVirtualObject(gvrHitResult.getPose(), andy);
         }
     }

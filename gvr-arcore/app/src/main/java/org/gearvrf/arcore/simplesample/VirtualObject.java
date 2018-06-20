@@ -15,6 +15,8 @@
 
 package org.gearvrf.arcore.simplesample;
 
+import android.util.Log;
+
 import org.gearvrf.GVRCollider;
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRMeshCollider;
@@ -31,19 +33,21 @@ public class VirtualObject extends GVRSceneObject {
 
     private GVRSceneObject m3dModel;
 
-    public VirtualObject(GVRContext gvrContext) {
+    public VirtualObject(GVRContext gvrContext, String path) {
         super(gvrContext);
 
         try {
-            load3dModel(gvrContext);
+            load3dModel(gvrContext, path);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void load3dModel(final GVRContext gvrContext) throws IOException {
-        final GVRSceneObject sceneObject = gvrContext.getAssetLoader().loadModel("objects/andy.obj");
+    private void load3dModel(final GVRContext gvrContext, String path) throws IOException {
+        final GVRSceneObject sceneObject = gvrContext.getAssetLoader().loadModel(
+                path);
         addChildObject(sceneObject);
+
 
         sceneObject.forAllDescendants(new GVRSceneObject.SceneVisitor() {
             @Override
@@ -59,6 +63,7 @@ public class VirtualObject extends GVRSceneObject {
                 VirtualObject.this.attachComponent(collider);
 
                 m3dModel = childObject;
+                Log.d("GVR_ARCORE", "collider");
 
                 return false;
             }
