@@ -6,12 +6,13 @@ import android.support.annotation.NonNull;
 import android.view.View;
 
 import org.gearvrf.GVRContext;
-import org.gearvrf.GVRSceneObject;
 import org.gearvrf.io.GVRCursorController;
 import org.gearvrf.io.GVRInputManager;
 import org.gearvrf.utility.Log;
 import org.gearvrf.videoplayer.component.FadeableObject;
 import org.gearvrf.videoplayer.component.FadeableViewObject;
+import org.gearvrf.videoplayer.component.custom.FadeableSceneObject;
+import org.gearvrf.videoplayer.component.custom.OnFadeFinish;
 import org.gearvrf.videoplayer.component.video.backbutton.BackButton;
 import org.gearvrf.videoplayer.component.video.control.ControlWidget;
 import org.gearvrf.videoplayer.component.video.control.ControlWidgetListener;
@@ -29,12 +30,11 @@ import org.gearvrf.videoplayer.model.Video;
 
 import java.util.List;
 
-public class VideoPlayer extends GVRSceneObject {
+public class VideoPlayer extends FadeableSceneObject {
 
     private static final String TAG = VideoPlayer.class.getSimpleName();
     private static final float CONTROLLER_HEIGHT_FACTOR = .25f;
     private static final float BACK_BUTTON_SIZE_FACTOR = .1f;
-    private static final float LOADING_ASSET_SIZE_FACTOR = 2.f;
     private static final float OVERLAY_TITLE_HEIGHT_FACTOR = .06f;
     private static final float PLAY_NEXT_DIALOG_WIDTH_FACTOR = .19f;
     private static final float PLAY_NEXT_DIALOG_HEIGHT_FACTOR = .34f;
@@ -43,13 +43,8 @@ public class VideoPlayer extends GVRSceneObject {
     private ControlWidget mControl;
     private BackButton mBackButton;
     private PlayNextDialog mPlayNextDialog;
-    private OverlayTitle mOverlayTitle;
     private LoadingAsset mLoadingAsset;
 
-    private boolean mVideoPlayerActive = true;
-    private boolean mIsControlActive = true;
-    private boolean mBackButtonActive = true;
-    private boolean mIsPlayNextDialogActive = true;
     private boolean mHideControlWidgetTimerEnabled;
     private HideControlWidgetTimer mHideControlTimer;
     private List<Video> mVideos;
@@ -79,6 +74,7 @@ public class VideoPlayer extends GVRSceneObject {
         addBackButton(BACK_BUTTON_SIZE_FACTOR * playerHeight);
         addPlayNextDialog(PLAY_NEXT_DIALOG_WIDTH_FACTOR * playerWidth, PLAY_NEXT_DIALOG_HEIGHT_FACTOR * playerHeight);
         addTitleOverlay(OVERLAY_TITLE_HEIGHT_FACTOR * playerHeight);
+        addLoadingAsset();
     }
 
     public void prepare(@NonNull List<Video> videos) {
@@ -94,15 +90,7 @@ public class VideoPlayer extends GVRSceneObject {
 
     private void showControlWidget(boolean autoHide) {
         Log.d(TAG, "showControlWidget: ");
-        if (!mIsControlActive) {
-            addChildObject(mControl);
-            mControl.fadeIn(new FadeableObject.FadeInCallback() {
-                @Override
-                public void onFadeIn() {
-                    mIsControlActive = true;
-                }
-            });
-        }
+        mControl.fadeIn();
         if (autoHide) {
             mHideControlTimer.start();
         }
@@ -111,51 +99,25 @@ public class VideoPlayer extends GVRSceneObject {
     private void hideControlWidget() {
         Log.d(TAG, "hideControlWidget: ");
         mHideControlTimer.cancel();
-        if (mIsControlActive) {
-            mIsControlActive = false;
-            mControl.fadeOut(new FadeableObject.FadeOutCallback() {
-                @Override
-                public void onFadeOut() {
-                    removeChildObject(mControl);
-                }
-            });
-        }
+        mControl.fadeOut();
     }
 
     private void showBackButton() {
-        if (!mBackButtonActive) {
-            addChildObject(mBackButton);
-            mBackButton.fadeIn(new FadeableObject.FadeInCallback() {
-                @Override
-                public void onFadeIn() {
-                    Log.d(TAG, "showBackButton");
-                    mBackButtonActive = true;
-                }
-            });
-        }
+        mBackButton.fadeIn();
     }
 
     private void hideBackButton() {
-        if (mBackButtonActive) {
-            mBackButton.fadeOut(new FadeableObject.FadeOutCallback() {
-                @Override
-                public void onFadeOut() {
-                    mBackButtonActive = false;
-                    removeChildObject(mBackButton);
-                }
-            });
-        }
+        mBackButton.fadeOut();
     }
 
     private void showPlayNextDialog() {
-        if (mVideoPlayerActive && !mIsPlayNextDialogActive) {
+        if (isEnabled() && !mPlayNextDialog.isEnabled()) {
             mHideControlTimer.cancel();
             mPlayNextDialog.setVideoData(mVideos.get(mPlayer.getNextIndexToPlay()));
             addChildObject(mPlayNextDialog);
             mPlayNextDialog.fadeIn(new FadeableViewObject.FadeInCallback() {
                 @Override
                 public void onFadeIn() {
-                    mIsPlayNextDialogActive = true;
                     showBackButton();
                     mPlayNextDialog.startTimer();
                 }
@@ -164,21 +126,20 @@ public class VideoPlayer extends GVRSceneObject {
     }
 
     private void hidePlayNextDialog() {
-        if (mIsPlayNextDialogActive) {
-            mIsPlayNextDialogActive = false;
+        if (mPlayNextDialog.isEnabled()) {
             mPlayNextDialog.cancelTimer();
             mPlayNextDialog.fadeOut(new FadeableViewObject.FadeOutCallback() {
                 @Override
                 public void onFadeOut() {
-                    removeChildObject(mPlayNextDialog);
+                    mPlayNextDialog.setEnable(false);
                 }
             });
         }
     }
 
     public void showAllControls() {
-        if (mVideoPlayerActive) {
-            if (!mIsPlayNextDialogActive) {
+        if (isEnabled()) {
+            if (!mPlayNextDialog.isEnabled()) {
                 showControlWidget();
             }
             showBackButton();
@@ -186,7 +147,7 @@ public class VideoPlayer extends GVRSceneObject {
     }
 
     private void hideAllControls() {
-        if (!mIsPlayNextDialogActive) {
+        if (!mPlayNextDialog.isEnabled()) {
             hideBackButton();
         }
         hideControlWidget();
@@ -230,12 +191,13 @@ public class VideoPlayer extends GVRSceneObject {
 
     private void addPlayNextDialog(float width, float height) {
         mPlayNextDialog = new PlayNextDialog(getGVRContext(), width, height, mOnPlayNextListener);
+        mPlayNextDialog.setEnable(false);
         mPlayNextDialog.getTransform().setPositionZ(mPlayer.getTransform().getPositionZ() + .5f);
         addChildObject(mPlayNextDialog);
     }
 
     private void addTitleOverlay(float height) {
-        mOverlayTitle = new OverlayTitle(getGVRContext());
+        OverlayTitle mOverlayTitle = new OverlayTitle(getGVRContext());
         mOverlayTitle.getTransform().setScale(3, 3, 1);
         float positionY = (height / OVERLAY_TITLE_HEIGHT_FACTOR / 2f);
         mOverlayTitle.getTransform().setPositionY(positionY + .5f);
@@ -244,6 +206,7 @@ public class VideoPlayer extends GVRSceneObject {
 
     private void addLoadingAsset() {
         mLoadingAsset = new LoadingAsset(getGVRContext());
+        mLoadingAsset.setEnable(false);
         mLoadingAsset.getTransform().setScale(1.f, 1.f, 1.f);
         mLoadingAsset.getTransform().setPositionZ(mPlayer.getTransform().getPositionZ() + 1f);
         addChildObject(mLoadingAsset);
@@ -301,7 +264,7 @@ public class VideoPlayer extends GVRSceneObject {
             mControl.setProgress((int) mPlayer.getProgress());
             mControl.setButtonState(ControlWidget.ButtonState.PLAYING);
 
-            if (mVideoPlayerActive) {
+            if (isEnabled()) {
                 mPlayer.fadeIn(new FadeableObject.FadeInCallback() {
                     @Override
                     public void onFadeIn() {
@@ -319,15 +282,23 @@ public class VideoPlayer extends GVRSceneObject {
             Log.d(TAG, "Video started");
             mControl.setButtonState(ControlWidget.ButtonState.PAUSED);
             showAllControls();
-            removeChildObject(mLoadingAsset);
             super.onStart();
         }
 
         @Override
-        public void onLoading() {
-            Log.d(TAG, "Video loading");
-            addLoadingAsset();
-            super.onLoading();
+        public void onStartBuffering() {
+            Log.d(TAG, "Start buffering");
+            if (isEnabled()) {
+                mLoadingAsset.fadeIn();
+            }
+            super.onStartBuffering();
+        }
+
+        @Override
+        public void onEndBuffering() {
+            Log.d(TAG, "End buffering");
+            mLoadingAsset.fadeOut();
+            super.onEndBuffering();
         }
 
         @Override
@@ -338,7 +309,6 @@ public class VideoPlayer extends GVRSceneObject {
                 hideControlWidget();
                 showPlayNextDialog();
             }
-            removeChildObject(mLoadingAsset);
             super.onFileEnd();
         }
 
@@ -418,41 +388,16 @@ public class VideoPlayer extends GVRSceneObject {
         }
     }
 
-    public void show(final FadeableObject.FadeInCallback fadeInCallback) {
-        if (!mVideoPlayerActive) {
-            mPlayer.fadeIn(new FadeableObject.FadeInCallback() {
-                @Override
-                public void onFadeIn() {
-                    mVideoPlayerActive = true;
-                    showAllControls();
-                    if (fadeInCallback != null) {
-                        fadeInCallback.onFadeIn();
-                    }
-                }
-            });
-            addChildObject(mOverlayTitle);
-        }
+    @Override
+    public void fadeIn(OnFadeFinish onFadeFinish) {
+        mPlayNextDialog.setEnable(false);
+        super.fadeIn(onFadeFinish);
     }
 
-    public void hide() {
-        hide(null);
+    @Override
+    public void fadeOut(OnFadeFinish onFadeFinish) {
+        mPlayer.stop();
+        super.fadeOut(onFadeFinish);
     }
 
-    public void hide(final FadeableObject.FadeOutCallback fadeOutCallback) {
-        if (mVideoPlayerActive) {
-            hidePlayNextDialog();
-            hideAllControls();
-            mPlayer.stop();
-            mPlayer.fadeOut(new FadeableObject.FadeOutCallback() {
-                @Override
-                public void onFadeOut() {
-                    mVideoPlayerActive = false;
-                    if (fadeOutCallback != null) {
-                        fadeOutCallback.onFadeOut();
-                    }
-                }
-            });
-            removeChildObject(mOverlayTitle);
-        }
-    }
 }

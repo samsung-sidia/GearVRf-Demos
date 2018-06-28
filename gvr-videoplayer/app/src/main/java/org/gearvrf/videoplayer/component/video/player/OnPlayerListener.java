@@ -8,7 +8,9 @@ public interface OnPlayerListener {
 
     void onStart();
 
-    void onLoading();
+    void onStartBuffering();
+
+    void onEndBuffering();
 
     void onFileEnd();
 

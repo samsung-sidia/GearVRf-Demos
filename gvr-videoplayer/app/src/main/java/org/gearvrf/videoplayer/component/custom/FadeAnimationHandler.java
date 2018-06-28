@@ -19,24 +19,25 @@ package org.gearvrf.videoplayer.component.custom;
 
 import android.support.annotation.NonNull;
 
+import org.gearvrf.GVRContext;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.animation.GVRAnimation;
 import org.gearvrf.animation.GVROnFinish;
-import org.gearvrf.animation.GVROpacityAnimation;
 
-import java.util.Set;
+import java.util.Collection;
 
-public enum FadeHandler {
+public enum FadeAnimationHandler {
 
     INSTANCE;
 
     private static final float FADE_DURATION = .2F;
 
+    private GVRContext mContext;
     private OnFadeFinish onFinish;
-    private int counter;
     private int opacity;
 
-    public void fadeObjects(@NonNull Set<GVRSceneObject> objects,
+    public void fadeObjects(@NonNull GVRContext context,
+                            @NonNull Collection<GVRSceneObject> objects,
                             @FadeType int fadeType,
                             @NonNull OnFadeFinish onFadeFinish) {
 
@@ -44,31 +45,22 @@ public enum FadeHandler {
             return;
         }
 
+        this.mContext = context;
         this.opacity = fadeType == FadeType.FADE_IN ? 1 : 0;
         this.onFinish = onFadeFinish;
 
-        synchronized (FadeHandler.this) {
-            counter = objects.size();
-        }
-
-        for (GVRSceneObject object : objects) {
-            fadeObject(object);
-        }
+        fadeObjects(objects);
     }
 
-    private void fadeObject(GVRSceneObject object) {
-        GVROpacityAnimation animation = new GVROpacityAnimation(object, FADE_DURATION, opacity);
+    private void fadeObjects(Collection<GVRSceneObject> objects) {
+        CollectionSceneObject collectionSceneObject = new CollectionSceneObject(mContext, objects);
+        CollectionOpacityAnimation animation = new CollectionOpacityAnimation(collectionSceneObject, FADE_DURATION, opacity);
         animation.setOnFinish(new GVROnFinish() {
             @Override
             public void finished(GVRAnimation gvrAnimation) {
-                synchronized (FadeHandler.this) {
-                    counter--;
-                    if (counter == 0) {
-                        onFinish.onFadeFinished();
-                    }
-                }
+                onFinish.onFadeFinished();
             }
         });
-        animation.start(object.getGVRContext().getAnimationEngine());
+        animation.start(mContext.getAnimationEngine());
     }
 }

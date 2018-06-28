@@ -17,7 +17,7 @@ import org.gearvrf.GVRSceneObject;
 import org.gearvrf.IViewEvents;
 import org.gearvrf.scene_objects.GVRViewSceneObject;
 import org.gearvrf.videoplayer.R;
-import org.gearvrf.videoplayer.component.FadeableObject;
+import org.gearvrf.videoplayer.component.custom.FadeableSceneObject;
 import org.gearvrf.videoplayer.focus.FocusListener;
 import org.gearvrf.videoplayer.focus.Focusable;
 import org.gearvrf.videoplayer.util.TimeUtils;
@@ -25,7 +25,7 @@ import org.gearvrf.videoplayer.util.TimeUtils;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
-public class ControlWidget extends FadeableObject implements Focusable, View.OnClickListener, SeekBar.OnSeekBarChangeListener, IViewEvents {
+public class ControlWidget extends FadeableSceneObject implements Focusable, View.OnClickListener, SeekBar.OnSeekBarChangeListener, IViewEvents {
 
     @IntDef({ButtonState.PLAYING, ButtonState.PAUSED})
     @Retention(RetentionPolicy.SOURCE)
@@ -47,12 +47,6 @@ public class ControlWidget extends FadeableObject implements Focusable, View.OnC
         super(gvrContext);
         mMainSceneObject = new GVRViewSceneObject(gvrContext, R.layout.layout_player_controller, this);
         setName(getClass().getSimpleName());
-    }
-
-    @NonNull
-    @Override
-    protected GVRSceneObject getFadeable() {
-        return mMainSceneObject;
     }
 
     private void setSeekTime(float x, int width) {

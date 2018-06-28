@@ -20,12 +20,10 @@ import android.view.View;
 
 import org.gearvrf.GVRAndroidResource;
 import org.gearvrf.GVRContext;
-import org.gearvrf.GVRMaterial;
 import org.gearvrf.GVRPicker;
 import org.gearvrf.GVRRenderData;
 import org.gearvrf.GVRScene;
 import org.gearvrf.GVRSceneObject;
-import org.gearvrf.GVRShader;
 import org.gearvrf.GVRTexture;
 import org.gearvrf.GVRTransform;
 import org.gearvrf.ITouchEvents;
@@ -35,6 +33,8 @@ import org.gearvrf.scene_objects.GVRSphereSceneObject;
 import org.gearvrf.utility.Log;
 import org.gearvrf.videoplayer.component.DefaultFadeableObject;
 import org.gearvrf.videoplayer.component.FadeableObject;
+import org.gearvrf.videoplayer.component.custom.FadeableSceneObject;
+import org.gearvrf.videoplayer.component.custom.OnFadeFinish;
 import org.gearvrf.videoplayer.component.gallery.Gallery;
 import org.gearvrf.videoplayer.component.gallery.OnGalleryEventListener;
 import org.gearvrf.videoplayer.component.video.VideoPlayer;
@@ -52,9 +52,9 @@ import java.util.List;
 public class VideoPlayerMain extends BaseVideoPlayerMain implements OnGalleryEventListener {
 
     private static final String TAG = VideoPlayerMain.class.getSimpleName();
-    private static float CURSOR_DEPTH = -8.0f;
-    private static float WIDTH_VIDEO_PLAYER = 10.0f;
-    private static float HEIGHT_VIDEO_PLAYER = 5.f;
+    private static final float CURSOR_DEPTH = -8.0f;
+    private static final float WIDTH_VIDEO_PLAYER = 10.0f;
+    private static final float HEIGHT_VIDEO_PLAYER = 5.f;
     private static final float SCALE = 200.0f;
 
     private Vector3f up = new Vector3f(0, 1, 0);
@@ -67,7 +67,8 @@ public class VideoPlayerMain extends BaseVideoPlayerMain implements OnGalleryEve
     private GVRCursorController mCursorController;
     private VideoPlayer mVideoPlayer;
     private GVRSceneObject mMainSceneContainer;
-    private FadeableObject mLabelCursor, mCurrentCursor, mParentCursor;
+    private FadeableSceneObject mLabelCursor;
+    private FadeableSceneObject mCurrentCursor;
     private Gallery mGallery;
     private GVRSphereSceneObject mSkybox;
 
@@ -97,12 +98,12 @@ public class VideoPlayerMain extends BaseVideoPlayerMain implements OnGalleryEve
 
     private void createVideoPlayer() {
         mVideoPlayer = new VideoPlayer(getGVRContext(), WIDTH_VIDEO_PLAYER, HEIGHT_VIDEO_PLAYER);
+        mVideoPlayer.setEnable(false);
         mVideoPlayer.getTransform().setPositionZ(-8.1f);
         mVideoPlayer.setControlWidgetAutoHide(true);
         mVideoPlayer.setPlayerListener(mOnPlayerListener);
         mVideoPlayer.setBackButtonClickListener(mBackButtonClickListener);
         mMainSceneContainer.addChildObject(mVideoPlayer);
-        mVideoPlayer.hide();
     }
 
     private void addSkyBoxSphere() {
@@ -157,10 +158,10 @@ public class VideoPlayerMain extends BaseVideoPlayerMain implements OnGalleryEve
         );
         mCurrentCursor.getRenderData().setDepthTest(false);
         mCurrentCursor.getRenderData().setRenderingOrder(GVRRenderData.GVRRenderingOrder.OVERLAY);
-        mParentCursor = new DefaultFadeableObject(mContext);
-        mParentCursor.addChildObject(mCurrentCursor);
-        mParentCursor.addChildObject(mLabelCursor);
-        return mParentCursor;
+        FadeableSceneObject parentCursor = new DefaultFadeableObject(mContext);
+        parentCursor.addChildObject(mCurrentCursor);
+        parentCursor.addChildObject(mLabelCursor);
+        return parentCursor;
     }
 
     private ITouchEvents mTouchHandler = new DefaultTouchEvent() {
@@ -171,22 +172,19 @@ public class VideoPlayerMain extends BaseVideoPlayerMain implements OnGalleryEve
 
         @Override
         public void onTouchStart(GVRSceneObject gvrSceneObject, GVRPicker.GVRPickedObject gvrPickedObject) {
-
             mVideoPlayer.showAllControls();
-
         }
     };
 
     private OnPlayerListener mOnPlayerListener = new DefaultPlayerListener() {
         @Override
         public void onPrepareFile(String title, long duration) {
-            mVideoPlayer.show(new FadeableObject.FadeInCallback() {
+            mVideoPlayer.fadeIn(new OnFadeFinish() {
                 @Override
-                public void onFadeIn() {
+                public void onFadeFinished() {
                     mVideoPlayer.play();
                 }
             });
-
             mSkybox.getRenderData().getMaterial().setColor(0.6f, 0.6f, 0.6f);
         }
     };
@@ -194,9 +192,9 @@ public class VideoPlayerMain extends BaseVideoPlayerMain implements OnGalleryEve
     private View.OnClickListener mBackButtonClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            mVideoPlayer.hide(new FadeableObject.FadeOutCallback() {
+            mVideoPlayer.fadeOut(new OnFadeFinish() {
                 @Override
-                public void onFadeOut() {
+                public void onFadeFinished() {
                     mMainSceneContainer.addChildObject(mGallery);
                     mGallery.fadeIn();
                 }
@@ -284,12 +282,12 @@ public class VideoPlayerMain extends BaseVideoPlayerMain implements OnGalleryEve
         }
     }
 
-    public void enableInteractiveCursor() {
+    private void enableInteractiveCursor() {
         mLabelCursor.fadeIn();
         mCurrentCursor.fadeOut();
     }
 
-    public void disableInteractiveCursor() {
+    private void disableInteractiveCursor() {
         mCurrentCursor.fadeIn();
         mLabelCursor.fadeOut();
     }

@@ -51,9 +51,11 @@ import org.gearvrf.videoplayer.component.FadeableObject;
 import org.gearvrf.videoplayer.component.video.DefaultExoPlayer;
 import org.gearvrf.videoplayer.model.Video;
 
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+
+import static com.google.android.exoplayer2.Player.STATE_BUFFERING;
+import static com.google.android.exoplayer2.Player.STATE_READY;
 
 public class Player extends FadeableObject {
 
@@ -139,10 +141,6 @@ public class Player extends FadeableObject {
         logd("Video stopped");
     }
 
-    public boolean isPlaying() {
-        return mIsPlaying;
-    }
-
     public long getDuration() {
         return mMediaPlayer.getDuration();
     }
@@ -176,15 +174,11 @@ public class Player extends FadeableObject {
         }
     }
 
-    private void resetQueue() {
-        mPlayingNowQueue = new LinkedList<>(Arrays.asList(mFiles));
-    }
-
     public void prepareNextFile() {
         if (mPlayingNowQueue != null && !mPlayingNowQueue.isEmpty()) {
             mMediaPlayer.pause();
             mPlayingNow = mPlayingNowQueue.pop();
-            MediaSource mediaSource = null;
+            MediaSource mediaSource;
             if (mPlayingNow.getVideoType() == Video.VideoType.LOCAL) {
                 mediaSource = fileMediaSource(mPlayingNow);
             } else {
@@ -233,6 +227,12 @@ public class Player extends FadeableObject {
         this.mOnVideoPlayerListener = listener;
     }
 
+    private void notifyEndBuffering() {
+        if (mOnVideoPlayerListener != null) {
+            mOnVideoPlayerListener.onEndBuffering();
+        }
+    }
+
     private void notifyVideoPrepared(String title, long duration) {
         if (mOnVideoPlayerListener != null) {
             mOnVideoPlayerListener.onPrepareFile(title, duration);
@@ -259,7 +259,7 @@ public class Player extends FadeableObject {
 
     private void notifyVideoLoading() {
         if (mOnVideoPlayerListener != null) {
-            mOnVideoPlayerListener.onLoading();
+            mOnVideoPlayerListener.onStartBuffering();
         }
     }
 
@@ -303,12 +303,19 @@ public class Player extends FadeableObject {
     }
 
     private com.google.android.exoplayer2.Player.EventListener mPlayerListener = new com.google.android.exoplayer2.Player.DefaultEventListener() {
+
+        private int mPreviousState = -1;
+
         @Override
         public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
 
-            mIsPlaying = playbackState == com.google.android.exoplayer2.Player.STATE_READY && playWhenReady;
+            mIsPlaying = playbackState == STATE_READY && playWhenReady;
 
-            if (playbackState == com.google.android.exoplayer2.Player.STATE_READY) {
+            if (playbackState == STATE_READY) {
+
+                if (mPreviousState == STATE_BUFFERING) {
+                    notifyEndBuffering();
+                }
 
                 if (playWhenReady) {
                     logd("Video started " + getPlayingNowName());
@@ -340,6 +347,8 @@ public class Player extends FadeableObject {
                 logd("Loading video: " + getPlayingNowName());
                 notifyVideoLoading();
             }
+
+            mPreviousState = playbackState;
         }
     };
 }

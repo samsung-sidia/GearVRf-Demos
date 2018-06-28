@@ -21,17 +21,24 @@ import android.support.annotation.NonNull;
 import android.support.v4.util.ArraySet;
 
 import org.gearvrf.GVRContext;
+import org.gearvrf.GVRMesh;
 import org.gearvrf.GVRSceneObject;
+import org.gearvrf.GVRTexture;
 
 import java.util.Set;
 
 public abstract class FadeableSceneObject extends GVRSceneObject {
 
     private Set<GVRSceneObject> mRenderables = new ArraySet<>();
-    private FadeHandler mFadeHandler = FadeHandler.INSTANCE;
+    private FadeAnimationHandler mFadeHandler = FadeAnimationHandler.INSTANCE;
 
     public FadeableSceneObject(GVRContext gvrContext) {
         super(gvrContext);
+        findRenderable(this);
+    }
+
+    public FadeableSceneObject(GVRContext gvrContext, GVRMesh mesh, GVRTexture texture) {
+        super(gvrContext, mesh, texture);
         findRenderable(this);
     }
 
@@ -43,7 +50,7 @@ public abstract class FadeableSceneObject extends GVRSceneObject {
         if (!isEnabled()) {
             setEnable(true);
             if (!mRenderables.isEmpty()) {
-                mFadeHandler.fadeObjects(mRenderables, FadeType.FADE_IN, new OnFadeFinish() {
+                mFadeHandler.fadeObjects(getGVRContext(), mRenderables, FadeType.FADE_IN, new OnFadeFinish() {
                     @Override
                     public void onFadeFinished() {
                         if (onFadeFinish != null) {
@@ -66,7 +73,7 @@ public abstract class FadeableSceneObject extends GVRSceneObject {
     public void fadeOut(final OnFadeFinish onFadeFinish) {
         if (isEnabled()) {
             if (!mRenderables.isEmpty()) {
-                mFadeHandler.fadeObjects(mRenderables, FadeType.FADE_OUT, new OnFadeFinish() {
+                mFadeHandler.fadeObjects(getGVRContext(), mRenderables, FadeType.FADE_OUT, new OnFadeFinish() {
                     @Override
                     public void onFadeFinished() {
                         setEnable(false);

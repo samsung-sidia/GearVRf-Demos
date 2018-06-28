@@ -1,25 +1,17 @@
 package org.gearvrf.videoplayer.component;
 
-import android.support.annotation.NonNull;
-
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRMesh;
-import org.gearvrf.GVRSceneObject;
 import org.gearvrf.GVRTexture;
+import org.gearvrf.videoplayer.component.custom.FadeableSceneObject;
 
-public class DefaultFadeableObject extends FadeableObject {
+public class DefaultFadeableObject extends FadeableSceneObject {
 
     public DefaultFadeableObject(GVRContext gvrContext) {
         super(gvrContext);
     }
 
-    public DefaultFadeableObject(GVRContext mContext, GVRMesh quad, GVRTexture gvrTexture) {
-        super(mContext, quad, gvrTexture);
-    }
-
-    @NonNull
-    @Override
-    protected GVRSceneObject getFadeable() {
-        return this;
+    public DefaultFadeableObject(GVRContext gvrContext, GVRMesh mesh, GVRTexture texture) {
+        super(gvrContext, mesh, texture);
     }
 }
