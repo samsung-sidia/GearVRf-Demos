@@ -24,7 +24,9 @@ import org.gearvrf.GVRSceneObject;
 import org.gearvrf.animation.GVRAnimation;
 import org.gearvrf.animation.GVROnFinish;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 public enum FadeAnimationHandler {
 
@@ -37,28 +39,41 @@ public enum FadeAnimationHandler {
     private int opacity;
 
     public void fadeObjects(@NonNull GVRContext context,
-                            @NonNull Collection<GVRSceneObject> objects,
+                            @NonNull GVRSceneObject root,
                             @FadeType int fadeType,
                             @NonNull OnFadeFinish onFadeFinish) {
-
-        if (objects.isEmpty()) {
-            return;
-        }
 
         this.mContext = context;
         this.opacity = fadeType == FadeType.FADE_IN ? 1 : 0;
         this.onFinish = onFadeFinish;
 
-        fadeObjects(objects);
+        final List<GVRSceneObject> renderableObjects = new ArrayList<>();
+
+        if (root.getRenderData() != null) {
+            renderableObjects.add(root);
+        }
+
+        root.forAllDescendants(new GVRSceneObject.SceneVisitor() {
+            @Override
+            public boolean visit(GVRSceneObject obj) {
+                if (obj.getRenderData() != null) {
+                    renderableObjects.add(obj);
+                }
+
+                return true;
+            }
+        });
+
+        fadeObjects(root, renderableObjects);
     }
 
-    private void fadeObjects(Collection<GVRSceneObject> objects) {
+    private void fadeObjects(final GVRSceneObject root, Collection<GVRSceneObject> objects) {
         CollectionSceneObject collectionSceneObject = new CollectionSceneObject(mContext, objects);
         CollectionOpacityAnimation animation = new CollectionOpacityAnimation(collectionSceneObject, FADE_DURATION, opacity);
         animation.setOnFinish(new GVROnFinish() {
             @Override
             public void finished(GVRAnimation gvrAnimation) {
-                onFinish.onFadeFinished();
+                onFinish.onFadeFinished(root);
             }
         });
         animation.start(mContext.getAnimationEngine());

@@ -47,7 +47,7 @@ import org.gearvrf.scene_objects.GVRSphereSceneObject;
 import org.gearvrf.scene_objects.GVRVideoSceneObject;
 import org.gearvrf.scene_objects.GVRVideoSceneObject.GVRVideoType;
 import org.gearvrf.videoplayer.VideoPlayerApp;
-import org.gearvrf.videoplayer.component.FadeableObject;
+import org.gearvrf.videoplayer.component.custom.FadeableSceneObject;
 import org.gearvrf.videoplayer.component.video.DefaultExoPlayer;
 import org.gearvrf.videoplayer.model.Video;
 
@@ -57,7 +57,7 @@ import java.util.List;
 import static com.google.android.exoplayer2.Player.STATE_BUFFERING;
 import static com.google.android.exoplayer2.Player.STATE_READY;
 
-public class Player extends FadeableObject {
+public class Player extends FadeableSceneObject {
 
     private static final String TAG = Player.class.getSimpleName();
     private static final String DEFAULT_FILE = "asset:///dinos.mp4";
@@ -269,12 +269,6 @@ public class Player extends FadeableObject {
 
     private static void logd(String text) {
         android.util.Log.d(TAG, text);
-    }
-
-    @NonNull
-    @Override
-    protected GVRSceneObject getFadeable() {
-        return mVideo;
     }
 
     @SuppressLint("HandlerLeak")

@@ -17,6 +17,8 @@
 
 package org.gearvrf.videoplayer.component.custom;
 
+import org.gearvrf.GVRSceneObject;
+
 public interface OnFadeFinish {
-    void onFadeFinished();
+    void onFadeFinished(GVRSceneObject obj);
 }

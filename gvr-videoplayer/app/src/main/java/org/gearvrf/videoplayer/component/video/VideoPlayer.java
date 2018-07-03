@@ -6,10 +6,10 @@ import android.support.annotation.NonNull;
 import android.view.View;
 
 import org.gearvrf.GVRContext;
+import org.gearvrf.GVRSceneObject;
 import org.gearvrf.io.GVRCursorController;
 import org.gearvrf.io.GVRInputManager;
 import org.gearvrf.utility.Log;
-import org.gearvrf.videoplayer.component.FadeableObject;
 import org.gearvrf.videoplayer.component.FadeableViewObject;
 import org.gearvrf.videoplayer.component.custom.FadeableSceneObject;
 import org.gearvrf.videoplayer.component.custom.OnFadeFinish;
@@ -265,9 +265,9 @@ public class VideoPlayer extends FadeableSceneObject {
             mControl.setButtonState(ControlWidget.ButtonState.PLAYING);
 
             if (isEnabled()) {
-                mPlayer.fadeIn(new FadeableObject.FadeInCallback() {
+                mPlayer.fadeIn(new OnFadeFinish() {
                     @Override
-                    public void onFadeIn() {
+                    public void onFadeFinished(GVRSceneObject obj) {
                         showAllControls();
                         mPlayer.playVideo();
                     }

@@ -32,7 +32,6 @@ import org.gearvrf.io.GVRInputManager;
 import org.gearvrf.scene_objects.GVRSphereSceneObject;
 import org.gearvrf.utility.Log;
 import org.gearvrf.videoplayer.component.DefaultFadeableObject;
-import org.gearvrf.videoplayer.component.FadeableObject;
 import org.gearvrf.videoplayer.component.custom.FadeableSceneObject;
 import org.gearvrf.videoplayer.component.custom.OnFadeFinish;
 import org.gearvrf.videoplayer.component.gallery.Gallery;
@@ -181,7 +180,7 @@ public class VideoPlayerMain extends BaseVideoPlayerMain implements OnGalleryEve
         public void onPrepareFile(String title, long duration) {
             mVideoPlayer.fadeIn(new OnFadeFinish() {
                 @Override
-                public void onFadeFinished() {
+                public void onFadeFinished(GVRSceneObject obj) {
                     mVideoPlayer.play();
                 }
             });
@@ -194,7 +193,7 @@ public class VideoPlayerMain extends BaseVideoPlayerMain implements OnGalleryEve
         public void onClick(View v) {
             mVideoPlayer.fadeOut(new OnFadeFinish() {
                 @Override
-                public void onFadeFinished() {
+                public void onFadeFinished(GVRSceneObject obj) {
                     mMainSceneContainer.addChildObject(mGallery);
                     mGallery.fadeIn();
                 }
@@ -239,9 +238,9 @@ public class VideoPlayerMain extends BaseVideoPlayerMain implements OnGalleryEve
     @Override
     public void onVideosSelected(final List<Video> videoList) {
         Log.d(TAG, "onVideosSelected: " + videoList);
-        mGallery.fadeOut(new FadeableObject.FadeOutCallback() {
+        mGallery.fadeOut(new OnFadeFinish() {
             @Override
-            public void onFadeOut() {
+            public void onFadeFinished(GVRSceneObject obj) {
                 mMainSceneContainer.removeChildObject(mGallery);
                 mVideoPlayer.prepare(videoList);
             }

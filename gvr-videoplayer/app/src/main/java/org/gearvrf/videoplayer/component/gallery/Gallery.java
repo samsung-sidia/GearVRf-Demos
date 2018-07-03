@@ -1,18 +1,16 @@
 package org.gearvrf.videoplayer.component.gallery;
 
 import android.annotation.SuppressLint;
-import android.support.annotation.NonNull;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
 
 import org.gearvrf.GVRContext;
-import org.gearvrf.GVRSceneObject;
 import org.gearvrf.IViewEvents;
 import org.gearvrf.scene_objects.GVRViewSceneObject;
 import org.gearvrf.videoplayer.R;
-import org.gearvrf.videoplayer.component.FadeableObject;
+import org.gearvrf.videoplayer.component.custom.FadeableSceneObject;
 import org.gearvrf.videoplayer.model.Album;
 import org.gearvrf.videoplayer.model.ExternalHomeItem;
 import org.gearvrf.videoplayer.model.GalleryItem;
@@ -27,7 +25,7 @@ import org.gearvrf.videoplayer.provider.asyntask.LocalVideoAsyncTask;
 import java.util.LinkedList;
 import java.util.List;
 
-public class Gallery extends FadeableObject implements OnItemsSelectionListener {
+public class Gallery extends FadeableSceneObject implements OnItemsSelectionListener {
 
     private static final String TAG = Gallery.class.getSimpleName();
     private RecyclerView mRecyclerView;
@@ -169,12 +167,6 @@ public class Gallery extends FadeableObject implements OnItemsSelectionListener 
         homeItems.add(new LocalHomeItem(getGVRContext().getContext()));
         homeItems.add(new ExternalHomeItem(getGVRContext().getContext()));
         return homeItems;
-    }
-
-    @NonNull
-    @Override
-    protected GVRSceneObject getFadeable() {
-        return mObjectViewGallery;
     }
 }
 
