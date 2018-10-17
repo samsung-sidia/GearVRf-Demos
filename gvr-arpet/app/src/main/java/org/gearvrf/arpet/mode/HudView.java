@@ -28,7 +28,7 @@ public class HudView extends BasePetView implements View.OnClickListener, IViewE
         mHudMenu = new GVRViewSceneObject(petContext.getGVRContext(), R.layout.hud_layout, this);
         mHudMenu.getRenderData().setRenderingOrder(GVRRenderData.GVRRenderingOrder.OVERLAY);
         mListener = null;
-        getTransform().setPosition(0.95f, 0.0f,-1.6f);
+        getTransform().setPosition(0.0f, 0.0f,-0.78f);
     }
 
     @Override
